@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<title>Számoló</title>	
+<style type="text/css">
+/*  * { border: 1px solid #000000; }    minden elem   */
+body {
+	color: red;
+	background-color: yellow
+}
+h1, h2 {
+	color: green;
+}
+h3, h4, h5, h6 {
+	color: red;
+}
+p {
+	text-align: center;
+	color: black;
+	font-family: arial
+}
+p.right {text-align: right}	/* class="right"   tulajdonságú bekezdésekre */
+p.left {text-align: left}
+.center { text-align: center }  /* minden "center" osztályú elem középre !! */
+#menu {color: green}   /* Id="menu" elemre vonatkozik!! */
+ul {
+	float:left;
+	width:100%;
+	padding:0;
+	margin:0;
+	list-style-type:none;
+}
+a {
+	float:left;
+	width:12em;
+	color:white;
+	background-color:purple;
+	padding:0.2em 0.6em;
+	border-right:1px solid white;
+}
+a:hover { background-color:#ff3300}
+li { display:inline }
+
+</style>
+<SCRIPT LANGUAGE="JavaScript">
+
+function szamol1()
+ {
+	var x = Number(document.szamolo.szam1.value);
+	var y = Number(document.szamolo.szam2.value);
+	var eredm="Eredmény: ";
+	switch (parseInt(document.szamolo.muvelet1.value))
+	{
+		case 1: var z = x + y;
+				eredm +=x + "+" + y + " = " + z;
+				break;
+		case 2: var z = x - y;
+				eredm +=x + "-" + y + " = " + z;
+				break;
+		case 3: var z = x * y;
+				eredm +=x + "*" + y + " = " + z;
+				break;
+		case 4: var z = x / y;
+				eredm +=x + "/" + y + " = " + z;
+				break;
+		case 5: var z = x % y;
+				eredm +=x + "%" + y + " = " + z;
+				break;
+		case 6: var z = Math.pow(x,y);
+				// eredm=x + " a " + y + ". hatványon = " + z;
+				eredm +=x + "<sup>" + y + "</sup> = " + z;
+				break;					
+	}
+	// console.log(eredm.length);
+	//document.szamolo.eredmeny1.value = eredm;
+	eredm = "<b>" + eredm + "</b>";
+	document.getElementById("eredmeny1").innerHTML = eredm;
+ }
+ 
+ function szamol3()
+ {
+	var x = Number(document.szamolo.szam3.value);
+	var eredm="Eredmény: ";
+	var szoveg = "gyok";
+	var muvelet;
+	
+	muvelet = parseInt(document.szamolo.muvelet3.value)
+	switch (muvelet)
+	{
+		case 1: var z = Math.sqrt(x);
+				eredm +=" &radic;<span id=" + szoveg + ">" + x + "</span> = " + z;
+				break;
+		case 2: var z = Math.log(x)/Math.LN10;
+				eredm +=" log " + x + " = " + z;
+				break;
+		case 3: var z = Math.log(x);
+				eredm +=" ln " + x + " = " + z;
+				break;
+		case 4: var z = Math.sin(x*2*Math.PI/360);
+				eredm +=" sin " + x + " = " + z;
+				break;
+		case 5: var z = Math.cos(x*2*Math.PI/360);
+				eredm +=" cos " + x + " = " + z;
+				break;
+		case 6: var z = Math.tan(x*2*Math.PI/360);
+				eredm +=" tan " + x + " = " + z;
+				break;						
+		case 7: var z = 1/x;
+				eredm +=" 1 / " + x + " = " + z;
+				break;
+		
+	}
+	
+	eredm = "<b>" + eredm + "</b>";	
+	document.getElementById("eredmeny3").innerHTML = eredm;
+	if(muvelet==1) document.getElementById("gyok").style.textDecoration = "overline";
+	
+ }
+ 
+ function szamol4()
+ {
+	var L4 = Number(document.szamolo.szl4.value);	// L  mH-ben !!
+	var f4 = Number(document.szamolo.szf4.value);   
+	var XL4 = Number(document.szamolo.szxl4.value);
+	var z;
+	switch (parseInt(document.szamolo.muvelet4.value))
+	{
+		case 1: z = 2*Math.PI*f4*L4/1000;		// XL  számítása
+				document.szamolo.szxl4.value=z;
+				break;
+		case 2: z = 1000*XL4/(2*Math.PI*f4);		// L  számítása
+				document.szamolo.szl4.value=z;
+				break;
+		case 3: z = 1000*XL4/(2*Math.PI*L4);		// f  számítása
+				document.szamolo.szf4.value=z;
+				break;						
+		
+	}
+	
+ }
+ 
+ function szamol5()
+ {
+	var C5 = Number(document.szamolo.szc5.value);   // C  nF-ban !!
+	var f5 = Number(document.szamolo.szf5.value);
+	var XC5 = Number(document.szamolo.szxc5.value);
+	var z;
+	switch (parseInt(document.szamolo.muvelet5.value))
+	{
+		case 1: z = 1000000000/(2*Math.PI*f5*C5);		// Xc  számítása
+				document.szamolo.szxc5.value=z;
+				break;
+		case 2: z = 1000000000/(2*Math.PI*f5*XC5);		// C  számítása
+				document.szamolo.szc5.value=z;
+				break;
+		case 3: z = 1000000000/(2*Math.PI*C5*XC5);		// f  számítása
+				document.szamolo.szf5.value=z;
+				break;						
+		
+	}
+	
+ } 
+ 
+function szamol6()
+ {
+	var C6 = Number(document.szamolo.szc6.value);	// C  nF-ban !!
+	var f6 = Number(document.szamolo.szf6.value);
+	var L6 = Number(document.szamolo.szl6.value);	// L  mH-ben !!
+	var z;
+	switch (parseInt(document.szamolo.muvelet6.value))
+	{
+		case 1: z = 1000000/(2*Math.PI*Math.sqrt(L6*C6));	// f0  számítása
+				document.szamolo.szf6.value=z;
+				break;
+		case 2: z = 1000000000000/(Math.pow(2*Math.PI*f6,2)*L6);	// C  számítása
+				document.szamolo.szc6.value=z;
+				break;
+		case 3: z = 1000000000000/(Math.pow(2*Math.PI*f6,2)*C6);	// L  számítása
+				document.szamolo.szl6.value=z;
+				break;						
+		
+	}
+	
+ } 
+ 
+ 
+ 
+</SCRIPT>
+</head>
+
+<body>
+<form name="szamolo">
+<h1><b>Számológép</b></h1>
+<h2><u>Alapműveletek</u></h2>
+1. szám: <input type="text" name="szam1"><br>
+2. szám: <input type="text" name="szam2"><br>
+Művelet: <select name="muvelet1">
+	<option value="1">összeadás</option>
+	<option value="2">kivonás</option>
+	<option value="3">szorzás</option>
+	<option value="4">osztás</option> 
+	<option value="5">maradékos szorzás</option>
+	<option value="6">hatványozás</option> 	
+	</select>
+<input type="button" value="Számol" onClick="szamol1()">	
+<output id="eredmeny1" ><b>Eredmény: </b></output>	
+<br>
+<br>
+<h2><u>Négyzetgyök, logaritmus, szinusz, koszinusz ...</u></h2>
+szám:   <input type="text" name="szam3"><br>
+Művelet: <select name="muvelet3">
+	<option value="1">&radic;</option>
+	<option value="2">log10</option>
+	<option value="3">ln</option>
+	<option value="4">sin</option> 
+	<option value="5">cos</option>
+	<option value="6">tan</option> 
+	<option value="7">1/x</option> 		
+	</select>
+<input type="button" value="Számol" onClick="szamol3()">
+<output id="eredmeny3" ><b>Eredmény: </b></output>
+<br>	
+<br>
+<h2><u>Elektrotechnika</u></h2>
+<h4>Induktív reaktancia, X<sub>L</sub></h4>
+L (mH): <input type="text" name="szl4">
+f (Hz): <input type="text" name="szf4">
+X<sub>L</sub> (&Omega;): <input type="text" name="szxl4">
+.....	X<sub>L</sub> = 2*&pi;*f*L
+<br>
+Művelet: <select name="muvelet4">
+	<option value="1">X<sub>L</sub></option>
+	<option value="2">L</option>
+	<option value="3">f</option> 
+	</select>
+<input type="button" value="Számol" onClick="szamol4()"><br>		
+<br>	
+<h4>Kapacitív reaktancia, X<sub>C</sub></h4>	
+C (nF): <input type="text" name="szc5">
+f (Hz): <input type="text" name="szf5">
+X<sub>C</sub> (&Omega;): <input type="text" name="szxc5">
+.....	X<sub>C</sub> = 1 / (2*&pi;*f*C)
+<br>
+Művelet: <select name="muvelet5">
+	<option value="1">X<sub>C</sub></option>
+	<option value="2">C</option>
+	<option value="3">f</option> 
+	</select>
+<input type="button" value="Számol" onClick="szamol5()"><br>		
+<br>		
+<h4>Rezonancia frekvencia, f<sub>0</sub></h4>
+C (nF): <input type="text" name="szc6">
+L (mH): <input type="text" name="szl6">
+f<sub>0</sub> (Hz): <input type="text" name="szf6">
+.....	f<sub>0</sub> = 1 / (2*&pi;*&radic;<span id="gyok2" style="text-decoration: overline"> L*C</span>)
+<br>
+Művelet: <select name="muvelet6">
+	<option value="1">f<sub>0</sub></option>
+	<option value="2">C</option>
+	<option value="3">L</option> 
+	</select>
+<input type="button" value="Számol" onClick="szamol6()"><br>		
+<br>			
+</form>
+<a href="index.html">vissza a főoldalra</a>
+</body>
+</html> 

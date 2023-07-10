@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8" />
+<title>Logikai kapu áramkörök</title>
+</head>
+<body>
+<form name="valaszt" method="get" enctype="text/plain">
+	<h1>Logikai kapuáramkörök működése</h1>
+
+	<h3>Kapuáramkör típusa</h3> 
+	<select name="kapu" size="1" onchange="kapuValaszt()">
+			<option value="and" selected>AND</option>
+			<option value="or">OR</option>
+			<option value="not">NOT</option>
+			<option value="nand">NAND</option>
+			<option value="nor">NOR</option>		
+	</select>
+	<p id="be">Bemenet: 'A'  és 'B'
+	</p>
+	<p id="ki">Kimenet: 'Y'
+	</p>
+	<p id="ki2">A kimenet logikai függvénye: Y = <span id="fuggv">A*B</span>
+	</p>
+	<p id="klikk" style="color:green;">Klikk a zöldre a bemeneteknél
+	</p><br>		
+</form>		
+<canvas width="700" height="500" id="rajzlap" onclick="klikkvaszon(event)" style="border:2px solid#c3c3c3;background-color: #f1f1f1;">
+A HTML5 canvas nem támogatott! </canvas>
+
+<script LANGUAGE="JavaScript">
+ 
+var canv1;
+var vaszon;
+var kapuTip="and";   //  kapu típusa
+var beA=2;   // 'A' bemenet értéke,   0-> 0   1-> 1   2-> ?  (nem ismert)
+var beB=2;   // 'B' bemenet értéke,   0-> 0   1-> 1   2-> ?  (nem ismert)
+var kiY=2;   // 'Y' kimenet értéke,   0-> 0   1-> 1   2-> ?  (nem ismert)
+
+setupVaszon();
+
+//*********************************************************************************
+
+function setupVaszon()
+{
+	canv1 = document.getElementById("rajzlap");
+	vaszon = canv1.getContext("2d");
+
+	rajzKapu2(0,0);		// kapu kirajzolása
+	rajzIgaztabla2(420,0);	// igazságtáblázat kirajzolása
+	rajzKimenet2(0,300);
+}
+
+//*********************************************************************************
+
+function kapuValaszt()
+{
+	kapuTip=document.valaszt.kapu.value;	// kiválasztott kapu típus
+	// alert("KapuTip = " + kapuTip);
+	beA=2;	//  bemenetek és kimenet határozatlan !!
+	beB=2;
+	kiY=2;
+	if(kapuTip=="not")  // egy bemenetű kapu
+	 {
+		document.getElementById("be").innerHTML = "Bemenet: 'A' "; 
+		document.getElementById("fuggv").style.textDecoration = "overline";
+		document.getElementById("fuggv").innerHTML = "A";
+		document.getElementById("klikk").innerHTML = "Klikk a zöldre a bemenetnél !!";
+		rajzKapu1(0,0);		// kapu kirajzolása
+		rajzIgaztabla1(420,0);	// igazságtáblázat kirajzolása
+		rajzKimenet1(0,300);
+	 }
+	 
+	else // két bemenetű kapu
+	 {
+		document.getElementById("be").innerHTML = "Bemenet: 'A'  és 'B'";
+		if((kapuTip=="nor") || (kapuTip=="nand"))
+			document.getElementById("fuggv").style.textDecoration = "overline";
+		else
+			document.getElementById("fuggv").style.textDecoration = "none";
+		if((kapuTip=="and") || (kapuTip=="nand"))
+			document.getElementById("fuggv").innerHTML = "A * B";
+		else if((kapuTip=="or") || (kapuTip=="nor"))
+			document.getElementById("fuggv").innerHTML = "A + B";
+		document.getElementById("klikk").innerHTML = "Klikk a zöldre a bemeneteknél !!";		
+		rajzKapu2(0,0);		// kapu kirajzolása
+		rajzIgaztabla2(420,0);	// igazságtáblázat kirajzolása
+		rajzKimenet2(0,300);
+
+	  }
+}
+
+
+//*********************************************************************************
+
+function klikkvaszon(event)
+{
+	var szoveg;
+	var x;
+	var y;
+	
+	x = event.offsetX;   // egérklikk X koordináta
+	y = event.offsetY;   // egérklikk Y koordináta
+	
+	if(kapuTip=="not")   // ha egy bemenet van (inverternél)
+	 {
+		 if((x>65) && (x<90) && (y>185) && (y<215)) // ha katt a bemenetnél lévő zöldre
+		  {
+			if(beA==1)  // bemenet változatatása, ha 1 volt ->  0 lesz
+				{ beA=0; kiY=1; }
+			else  		// bemenet változatatása, ha 2 vagy 0 volt ->  1 lesz
+				{ beA=1; kiY=0; }
+			rajzbeki1(0+70,0+190,0+340,0+190);	// megváltozott bemenet és kimenet kiírása
+			rajzKimenet1(0,300);
+		  }
+	 }
+	 
+	else		// ha két bemenetű kapu
+	 {
+		if((x>65) && (x<90) && (y>145) && (y<175)) // ha katt az 'A' bemenetnél lévő zöldre
+		  {
+			if(beA==1)  beA=0; 
+			else beA=1; 
+			kiszamol();		// kimenet számolása		
+			rajzbeki2(0+70,0+150,0+340,0+190);	// megváltozott bemenet és kimenet kiírása
+			rajzKimenet2(0,300);
+		  } 
+		if((x>65) && (x<90) && (y>225) && (y<255)) // ha katt a 'B' bemenetnél lévő zöldre
+		  {
+			if(beB==1)  beB=0; 
+			else beB=1; 
+			kiszamol();		// kimenet számolása
+			rajzbeki2(0+70,0+150,0+340,0+190);	// megváltozott bemenet és kimenet kiírása
+			rajzKimenet2(0,300);
+		  } 		 
+	 }
+}
+
+//*********************************************************************************
+
+function kiszamol()
+{
+	// kimenet számítása, 2 bemenetű kapuknál
+	
+	if((beA==2) || (beB==2))   // valamelyik bemenet ismeretlen
+	 {
+		 kiY=2;
+	 }
+	else  // mindkét bemenet ismert
+	 { 
+		if((kapuTip=="and") || (kapuTip=="nand")) kiY=beA*beB;	
+		else if((kapuTip=="or") || (kapuTip=="nor")) kiY=beA+beB;
+		if(kiY==2) kiY=1;
+		if((kapuTip=="nor") || (kapuTip=="nand"))
+		 {
+			 if(kiY==1) kiY=0;
+			 else kiY=1;
+		 }
+		
+	 }
+	 	 
+}
+
+
+//*********************************************************************************
+
+function rajzKapu1(x,y)
+{
+	// 1 bemenetű kapu rajzolása
+	//  x,y  kezdő koordináták (bal-felső sarok)
+	//  szükséges terület ->  420*300
+	
+    vaszon.clearRect(x,y,420,300);
+    vaszon.textBaseline = "bottom";
+ 	vaszon.textAlign = "left";
+	vaszon.fillStyle="#FF0000";
+ 	vaszon.font="25px Arial";
+ 	vaszon.fillText("inverter (NOT  gate)",x+30,y+50);
+	vaszon.fill();
+	
+	//  kapu
+	vaszon.lineWidth=3;
+	vaszon.strokeStyle="#FF0000";	
+	vaszon.fillStyle = "#221999";
+	vaszon.beginPath();
+	vaszon.arc(x+267,y+180,7,0,2*Math.PI);
+	vaszon.moveTo(x+274,y+180);
+ 	vaszon.lineTo(x+310,y+180);   // ki_Y
+  	vaszon.closePath();		
+	vaszon.stroke();
+	vaszon.beginPath();
+	vaszon.strokeRect(x+160,y+100,100,160);
+ 	vaszon.moveTo(x+115,y+180);
+ 	vaszon.lineTo(x+160,y+180);  //  be_A
+ 	vaszon.closePath();	
+	vaszon.stroke();
+
+	// bemenet, kimenet
+	vaszon.font="25px Arial";
+	vaszon.fillStyle = "#221999";
+	vaszon.fillText("A",x+60,y+180);
+ 	// vaszon.fill();
+ 	vaszon.fillText("Y",x+330,y+180);
+ 	vaszon.fill();
+ 	
+	// kapu típusjel
+	vaszon.fillStyle="#FF0000";
+ 	vaszon.font="60px Arial";
+	vaszon.fillText("1",x+200,y+200);
+    vaszon.fill();
+    
+    rajzbeki1(x+70,y+190,x+340,y+190);
+}
+
+//*********************************************************************************
+
+function rajzbeki1(x1,y1,x2,y2)
+{
+	// 1 bemenetű kapura a bemenet és kimenet értékeinek rajzolása
+	//  +  igazságtábla sorának mutatása !
+	//  x,y  kezdő koordináták (bal-felső sarok)
+	//  szükséges terület ->  30*30
+	
+	var be_ki = ['0','1','?'];   // kiírandó jelek
+							    // 0-> 0   1-> 1   2-> ?  (nem ismert)
+	
+    vaszon.clearRect(x1,y1,30,30);     //  a területek törlése
+    vaszon.clearRect(x2,y2,30,30);   
+    vaszon.textBaseline = "top";
+ 	vaszon.textAlign = "left";
+	vaszon.font="25px Arial";
+	
+ 	vaszon.fillStyle="#00FF00";		
+ 	vaszon.fillText(be_ki[beA],x1,y1);   //  bemenet értékének kiírása
+ 	vaszon.fill();
+  	vaszon.fillStyle="#669900";	
+ 	vaszon.fillText(be_ki[kiY],x2,y2);  //  kimenet értékének kiírása
+ 	vaszon.fill();
+ 	
+	// igazságtábla sorának mutatása
+	if(beA<2)
+	 {
+		vaszon.lineWidth=3;
+		vaszon.strokeStyle="#00FF00";
+		vaszon.clearRect(550,120,150,120); 
+		vaszon.beginPath(); 
+		vaszon.moveTo(560,160+beA*40);
+		vaszon.lineTo(640,160+beA*40);
+		vaszon.moveTo(560,160+beA*40);
+		vaszon.lineTo(570,150+beA*40);	
+		vaszon.moveTo(560,160+beA*40);		
+		vaszon.lineTo(570,170+beA*40);			
+		vaszon.closePath();					
+		vaszon.stroke();		 					
+
+	 }
+}
+
+
+
+//*********************************************************************************
+
+function rajzKapu2(x,y)
+{    
+	// 2 bemenetű kapu rajzolása
+	//  x,y  kezdő koordináták (bal-felső sarok)
+	//  szükséges terület ->  420*300
+	
+    vaszon.clearRect(x,y,420,300);
+    vaszon.textBaseline = "bottom";
+ 	vaszon.textAlign = "left";
+ 	vaszon.fillStyle="#FF0000";
+ 	vaszon.font="25px Arial";
+ 	
+ 	if(kapuTip=="and")
+		vaszon.fillText("ÉS kapu  (AND  gate)",x+30,y+50);
+	else if(kapuTip=="nand")
+		vaszon.fillText("ÉS-NEM kapu  (NAND  gate)",x+30,y+50); 
+	else if(kapuTip=="or")
+		vaszon.fillText("VAGY kapu  (OR  gate)",x+30,y+50); 
+ 	else if(kapuTip=="nor")
+		vaszon.fillText("VAGY-NEM kapu  (NOR  gate)",x+30,y+50);
+	vaszon.fill();
+	
+	//  kapu
+	vaszon.lineWidth=3;
+	vaszon.strokeStyle="#FF0000";	
+	vaszon.fillStyle = "#221999";
+	if((kapuTip=="nor") || (kapuTip=="nand"))
+	 {
+		vaszon.beginPath();
+		vaszon.arc(x+267,y+180,7,0,2*Math.PI);
+		vaszon.moveTo(x+274,y+180);
+		vaszon.lineTo(x+310,y+180);   // ki_Y
+		vaszon.closePath();		
+		vaszon.stroke();
+	 }
+	else
+	 {
+		vaszon.beginPath();
+	  	vaszon.moveTo(x+260,y+180);
+		vaszon.lineTo(x+310,y+180);   // kimenet_Y
+		vaszon.closePath();	
+		vaszon.stroke();
+	 }
+	vaszon.beginPath();
+	vaszon.strokeRect(x+160,y+100,100,160);
+	vaszon.moveTo(x+115,y+140);
+ 	vaszon.lineTo(x+160,y+140);  //  bemenet_A
+ 	vaszon.moveTo(x+115,y+220);
+ 	vaszon.lineTo(x+160,y+220);  //  bemenet_B
+ 	vaszon.closePath();	
+	vaszon.stroke();
+	
+	// bemenetek feliratok
+	vaszon.font="25px Arial";
+	vaszon.fillStyle = "#221999";
+	vaszon.fillText("A",x+60,y+140);
+ 	vaszon.fillText("B",x+60,y+220);
+ 	vaszon.fill();
+
+ 	// kimenet  feliratok
+ 	vaszon.fillStyle = "#221999";
+ 	vaszon.fillText("Y",x+330,y+180);
+ 	vaszon.fill();
+ 	
+	// kapu típusjel
+	vaszon.fillStyle="#FF0000";
+ 	vaszon.font="60px Arial";
+ 	if((kapuTip=="and") || (kapuTip=="nand"))
+	 {
+		vaszon.fillText("&",x+190,y+205);
+		// alert("and  nand");
+	 }
+ 	else if((kapuTip=="or") || (kapuTip=="nor"))
+ 	 {
+		vaszon.beginPath(); 
+		vaszon.moveTo(x+175,y+160);
+		vaszon.lineTo(x+195,y+170);
+		vaszon.moveTo(x+175,y+180);
+		vaszon.lineTo(x+195,y+170);				
+		vaszon.moveTo(x+175,y+185);
+		vaszon.lineTo(x+195,y+185);   //nagyobb-egyenlő jel	
+		vaszon.closePath();					
+		vaszon.stroke();		 
+		vaszon.fillText("1",x+205,y+205);
+						
+	 }	
+
+    vaszon.fill();
+ 	rajzbeki2(x+70,y+150,x+340,y+190);	
+ 	
+}
+
+
+//*********************************************************************************
+
+function rajzbeki2(x1,y1,x2,y2)
+{
+	// 2 bemenetű kapura a bemenetek és kimenet értékeinek rajzolása
+	//  x,y  kezdő koordináták (bal-felső sarok)
+	//  szükséges terület ->  30*120 és 30*30
+	
+	var be_ki = ['0','1','?'];   // kiírandó jelek
+							    // 0-> 0   1-> 1   2-> ?  (nem ismert)
+	
+    vaszon.clearRect(x1,y1,30,40);
+    vaszon.clearRect(x1,y1+80,30,40);
+    vaszon.clearRect(x2,y2,30,30);   
+    vaszon.textBaseline = "top";
+ 	vaszon.textAlign = "left";
+	vaszon.font="25px Arial";
+ 	vaszon.fillStyle="#00FF00";
+ 	
+ 	vaszon.fillText(be_ki[beA],x1,y1);   //  bemenet értékének kiírása
+ 	vaszon.fill();
+ 	vaszon.fillText(be_ki[beB],x1,y1+80);	 //  bemenet értékének kiírása
+ 	vaszon.fill();
+ 	vaszon.fillStyle="#669900";	
+ 	vaszon.fillText(be_ki[kiY],x2,y2);   //  kimenet értékének kiírása
+ 	vaszon.fill();
+ 	
+	// igazságtábla sorának mutatása
+	if((beA<2) && (beB<2))
+	 {
+		vaszon.lineWidth=3;
+		vaszon.strokeStyle="#00FF00";
+		vaszon.clearRect(600,120,100,180); 
+		vaszon.beginPath(); 
+		vaszon.moveTo(600,160+2*beA*40+beB*40);
+		vaszon.lineTo(680,160+2*beA*40+beB*40);
+		vaszon.moveTo(600,160+2*beA*40+beB*40);
+		vaszon.lineTo(610,150+2*beA*40+beB*40);	
+		vaszon.moveTo(600,160+2*beA*40+beB*40);		
+		vaszon.lineTo(610,170+2*beA*40+beB*40);			
+		vaszon.closePath();					
+		vaszon.stroke();		 					
+
+	 }
+
+}
+
+//*********************************************************************************
+
+
+function rajzIgaztabla1(x,y)
+{
+	//  igazságtáblázat felírása, 1 bemenet esetén
+	//  x,y  kezdő koordináták (bal-felső sarok)
+	//  szükséges terület ->  280*500
+	
+	var i;
+	var be=['A','0','1'];   // igazságtábla, bemeneti variációk
+	var ki=['Y','1','0'];	// igazságtábla, kimenetek
+	
+	vaszon.clearRect(x,y,280,500);
+	vaszon.textBaseline = "bottom";
+ 	vaszon.textAlign = "left";
+	vaszon.lineWidth=2;
+	vaszon.strokeStyle="#FF0000";	
+	vaszon.beginPath();
+	for(i=0;i<3;i++)
+	 {		// vízszintes vonalak
+		vaszon.moveTo(x+30,y+140+i*40);
+		vaszon.lineTo(x+110,y+140+i*40);      	
+	 } 
+ 	vaszon.moveTo(x+75,y+110);
+ 	vaszon.lineTo(x+75,y+220);    // függőleges vonal	
+ 	vaszon.closePath();	
+ 	vaszon.stroke();		
+ 	
+	vaszon.fillStyle="#0000FF";
+ 	vaszon.font="25px Arial";
+ 	vaszon.fillText("Igazságtábla",x+30,y+60);
+	vaszon.fillText("(Truth table)",x+40,y+90);
+	vaszon.fillStyle = "#221999";
+	for(i=0;i<3;i++)
+	 {
+		vaszon.fillText(be[i],x+40,y+130+i*40);
+		vaszon.fillText(ki[i],x+90,y+130+i*40);
+	 }
+	vaszon.fill();
+
+}
+
+//*********************************************************************************
+
+function rajzIgaztabla2(x,y)
+{
+	// igazságtáblázat felírása, 2 bemenet esetén
+	//  x,y  kezdő koordináták (bal-felső sarok)
+	//  szükséges terület ->  280*500
+	
+	var i;
+	var be1=['A','0','0','1','1'];   // igazságtábla, bemeneti variációk
+	var be2=['B','0','1','0','1'];	// igazságtábla, bemeneti variációk
+	var kiOR=['Y','0','1','1','1'];	// igazságtábla, kimenetek
+	var kiNOR=['Y','1','0','0','0'];	// igazságtábla, kimenetek
+	var kiAND=['Y','0','0','0','1'];	// igazságtábla, kimenetek
+	var kiNAND=['Y','1','1','1','0'];	// igazságtábla, kimenetek
+	
+	vaszon.clearRect(x,y,280,500);
+	vaszon.textBaseline = "bottom";
+ 	vaszon.textAlign = "left";
+	vaszon.lineWidth=2;
+	vaszon.strokeStyle="#FF0000";	
+	vaszon.beginPath();
+	for(i=0;i<5;i++)
+	 {		// vízszintes vonalak
+		vaszon.moveTo(x+30,y+140+i*40);
+		vaszon.lineTo(x+160,y+140+i*40);      	
+	 } 
+	vaszon.moveTo(x+110,y+110);
+ 	vaszon.lineTo(x+110,y+300);    // függőleges vonal
+ 	vaszon.closePath();	
+ 	vaszon.stroke();		
+ 	
+	vaszon.fillStyle="#0000FF";
+ 	vaszon.font="25px Arial";
+ 	vaszon.fillText("Igazságtábla",x+30,y+60);
+	vaszon.fillText("(Truth table)",x+40,y+90);
+	vaszon.fillStyle = "#221999";
+	for(i=0;i<5;i++)
+	 {
+		vaszon.fillText(be1[i],x+40,y+130+i*40);
+		vaszon.fillText(be2[i],x+80,y+130+i*40);
+		if(kapuTip=="and")
+			vaszon.fillText(kiAND[i],x+120,y+130+i*40);
+		else if(kapuTip=="nand")
+			vaszon.fillText(kiNAND[i],x+120,y+130+i*40);	
+		else if(kapuTip=="or")
+			vaszon.fillText(kiOR[i],x+120,y+130+i*40);
+		else if(kapuTip=="nor")
+			vaszon.fillText(kiNOR[i],x+120,y+130+i*40);		
+	 }
+
+	vaszon.fill();
+	
+}
+
+
+//*********************************************************************************
+
+
+function rajzKimenet1(x,y)
+{
+	//  inverter (NOT) kapu esetén
+	// alsó részen a függvény kiírása,  és a kimenet számolása adott bemenet esetén
+	//  x,y  kezdő koordináták (bal-felső sarok)
+	//  szükséges terület ->  420*200
+	
+	var szoveg;
+	
+	vaszon.font="25px Arial";
+	vaszon.textBaseline = "top";
+
+	
+	if(beA==2)    //  először kiírjuk a függvényt, amikor a bemenet még nem ismert
+	 {
+		vaszon.clearRect(x,y,420,200);
+		vaszon.fillStyle = "#221999";
+		vaszon.textAlign = "right";
+		vaszon.fillText("Kimenet:  Y = ",x+200,y+4+3);
+		vaszon.textAlign = "left";	
+		vaszon.fillText("A",x+200,y+4+3);
+
+		vaszon.lineWidth=1;
+		vaszon.strokeStyle="#221999";	
+		vaszon.beginPath();
+		vaszon.moveTo(x+200,y+4);
+		vaszon.lineTo(x+217,y+4);   // negálás
+		vaszon.closePath();	
+		vaszon.stroke();
+	 }
+	else		//  ha a bemenet már ismert, akkor pluszban számolunk is 
+	 {
+		szoveg = beA + " = " + kiY; 
+		vaszon.clearRect(x,y+50,420,150);
+		vaszon.fillStyle="#00FF00";
+		vaszon.textAlign = "right";
+		vaszon.fillText("Y = ",x+200,y+54+3);
+		vaszon.textAlign = "left";	
+		vaszon.fillText(szoveg,x+200,y+54+3);
+
+		vaszon.lineWidth=1;
+		vaszon.strokeStyle="#00FF00";	
+	  	vaszon.beginPath();
+		vaszon.moveTo(x+200,y+54);
+		vaszon.lineTo(x+217,y+54);   // negálás
+		vaszon.closePath();	
+		vaszon.stroke();
+		 
+	 }
+	
+	
+	
+}
+
+
+//*********************************************************************************
+
+function rajzKimenet2(x,y)
+{
+	//  két bemenetű kapuk esetén
+	// alsó részen a függvény kiírása,  és a kimenet számolása adott bemenetek esetén
+	//  x,y  kezdő koordináták (bal-felső sarok)
+	//  szükséges terület ->  420*200
+	
+	var szoveg;
+	var kiN;  // negált kimenet
+	
+	vaszon.font="25px Arial";
+ 	vaszon.textBaseline = "top";
+ 	
+ 	if((beA==2) && (beB==2))    //  először kiírjuk a függvényt, amikor a bemenetek még nem ismertek
+	 {
+		vaszon.clearRect(x,y,420,200);
+		vaszon.fillStyle = "#221999";
+		vaszon.textAlign = "right";
+		vaszon.fillText("Kimenet:  Y = ",x+200,y+4);
+		vaszon.textAlign = "left";	
+
+		if((kapuTip=="and") || (kapuTip=="nand"))
+			vaszon.fillText("A * B",x+200,y+4+3);
+		else if((kapuTip=="or") || (kapuTip=="nor"))
+			vaszon.fillText("A + B",x+200,y+4+3);
+		if((kapuTip=="nor") || (kapuTip=="nand"))
+		 {	
+			vaszon.lineWidth=1;
+			vaszon.strokeStyle="#221999";	
+			vaszon.beginPath();
+			vaszon.moveTo(x+200,y+4);
+			vaszon.lineTo(x+264,y+4);   // negálás
+			vaszon.closePath();	
+			vaszon.stroke();	
+		 }		 
+	 }
+	else if((beA<2) && (beB<2)) //  ha a bemenetek már ismertek, akkor pluszban számolunk is 
+	 {
+		vaszon.clearRect(x,y+50,420,150);
+		vaszon.fillStyle="#00FF00";
+		vaszon.textAlign = "right";
+		vaszon.fillText("Y = ",x+200,y+54+3);
+		vaszon.textAlign = "left";	
+		if((kapuTip=="and") || (kapuTip=="nand"))
+			szoveg = beA + " * " + beB; 
+		else if((kapuTip=="or") || (kapuTip=="nor"))
+			szoveg = beA + " + " + beB; 	
+		
+		if((kapuTip=="nor") || (kapuTip=="nand"))
+		 {	
+			if(kiY==0) kiN=1;
+			else kiN=0;
+			szoveg += " = " + kiN + " = " + kiY; 
+			
+			vaszon.lineWidth=1;
+			vaszon.strokeStyle="#00FF00";	
+			vaszon.beginPath();
+			vaszon.moveTo(x+200,y+54);
+			vaszon.lineTo(x+255,y+54);   // negálás
+			vaszon.closePath();	
+			vaszon.stroke();	
+			vaszon.beginPath();
+			vaszon.moveTo(x+280,y+54);
+			vaszon.lineTo(x+300,y+54);   // negálás
+			vaszon.closePath();	
+			vaszon.stroke();				
+			
+		 }
+		else   szoveg += " = " + kiY; 
+		vaszon.fillText(szoveg,x+200,y+54+3);
+		 
+	 } 
+	 
+}
+
+
+</script>
+</body>
+</html>

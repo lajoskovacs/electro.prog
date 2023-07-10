@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8" />
+<title>Feszültségosztó áramkör</title>
+<style type="text/css">
+body {
+	color: red;
+	background-color: yellow
+}
+h1, h2 {
+	color: green;
+}
+h3, h4, h5, h6 {
+	color: red;
+}
+p {
+	text-align: center;
+	color: black;
+	font-family: arial
+}
+
+</style>
+</head>
+<body>
+<form name="valaszt" method="get" enctype="text/plain">
+	<h1>Feszültségosztó számítások</h1>
+
+	<b>Felső ágban lévő elenállások</b> 
+	<select name="felso" size="1" onchange="osztoset()">
+			<option value="1" selected>egy</option>
+			<option value="2">kettő párh.</option>
+			<option value="3">kettő sor.</option>		
+	</select><br>	
+	<b>Kimenetnél lévő elenállások</b> 
+	<select name="kime" size="1" onchange="osztoset()">
+			<option value="1" selected>egy</option>
+			<option value="2">kettő párh.</option>
+			<option value="3">kettő sor.</option>		
+	</select><br>	
+	<b>Alsó ágban lévő elenállások</b> 
+	<select name="also" size="1" onchange="osztoset()">
+			<option value="0" selected>nincs</option>
+			<option value="1">egy</option>
+			<option value="2">kettő párh.</option>
+			<option value="3">kettő sor.</option>			
+	</select><br>	
+	<br>
+	<canvas width="450" height="580" id="rajzlap" onclick="klikkvaszon(event)" style="border:2px solid#c3c3c3;background-color: #f1f1f1;">
+	A HTML5 canvas nem támogatott! </canvas>
+	<br>
+	Tipp: <input type="text" name="tipp">
+	<input type="button" value="Mehet" onClick="ertekel()">
+	<br>	
+</form>		
+
+<script LANGUAGE="JavaScript">
+ // 2021.  jún.-júl.   KL
+var canv1;
+var vaszon;
+const xvaszon=450;
+const yvaszon=580;
+const oszto={		// a kiválasztott áramkör jellemzői
+	fent:1,   // felső ág típusa, (1- egy ell.   2- két párh. ell.  3- két sor. ell. )
+	lent:0,   // alsó ág típusa, (1- egy ell.   2- két párh. ell.  3- két sor. ell.  0- rövidzár)
+	jobb:1,   // kimeneti ág típusa, (1- egy ell.   2- két párh. ell.  3- két sor. ell.) 
+	sor:2,	// hány részre osztódik a bemeneti feszültség, minimum 2
+	rbe:0,	// az eredő a bemenet felől nézve, a szám értékek sorsolásakor adódik ! nem kell külön számolni !!
+	rki:0,	// az eredő a kimenet felől nézve
+	r12:"",	// a felső ág eredőjének képlete
+	r34:"",	// a kimeneti ág eredőjének képlete
+	r56:"",	// az alsó ág eredőjének képlete
+};
+// rajz koordináták
+var xk={xbe:40,xbe2:80,xko:160,xko2:160,xki:190,xki2:220,xki3:260};
+var yk={yfent:30,yfent2:60,yko:140,ylent:140,ylent2:170,ylent3:220};
+
+// ellenállások
+var res1={nev:"R1",ertek:1,egys:"k"};  // felső ág 1. ellenállás
+var res2={nev:"",ertek:1,egys:"k"};	// felső ág 2. ellenállás, ha van !!
+var res3={nev:"R2",ertek:1,egys:"k"}; // kimenet 1. ellenállás
+var res4={nev:"",ertek:1,egys:"k"};   // kimenet 2. ellenállás, ha van !!
+var res5={nev:"",ertek:1,egys:"k"};  // alsó ág 1. ellenállás, ha van !!
+var res6={nev:"",ertek:1,egys:"k"};  // alsó ág 2. ellenállás, ha van !!
+
+// feszültségek
+var ube={nev:"Ube",ertek:6,egys:"V"};  // bemeneti feszültség
+var uki={nev:"Uki",ertek:3,egys:"V"};  // bemeneti feszültség
+
+// választható párhuzamos ellenállás értékek [R1,R2] az eredő = a küső tömb indexe !!
+const parhtar=[
+	[[1,0],[1,0],[1,0]],		// 0
+	[[2,2],[1.5,3],[1.1,11]],	//  1
+	[[3,6],[2.5,10],[4,4]],		//  2
+	[[4,12],[4.5,9],[6,6]],
+	[[5,20],[6,12],[8,8]],
+	[[6,30],[7.5,15],[10,10]],
+	[[8,24],[9,18],[12,12]],	// 6
+	[[8,56],[10.5,21],[14,14]],	// 7
+	[[12,24],[10,40],[16,16]],	// 8
+	[[10,90],[12,36],[18,18]],
+	[[11,110],[15,30],[20,20]],	// 10
+	[[12,132],[16.5,33],[22,22]],	// 11
+	[[18,36],[16,48],[24,24]]];	// 12
+	
+
+// eredő ellenállás ezekből választható !
+const eredotar=[2,4,5,10,20,30,40,50,60,70,80];
+
+// bemeneti feszültség (Ube) ezekből választható !
+const ubetar=[6,10,12,15,20,24,30,48,60,72];
+
+
+setupvaszon();
+
+//*********************************************************************************
+
+function setupvaszon()
+{
+	// rajzoló terület (vászon) létrehozása
+	canv1 = document.getElementById("rajzlap");
+	vaszon = canv1.getContext("2d");
+
+	osztoset();		// áramkör beállítása és kirajzolása
+	
+	
+}
+
+//*********************************************************************************
+
+function osztoset()
+{
+	
+	// x-y koordináták beállítása, az ellenállások számától és 
+	// elhelyezkedésétől függően
+	//  és ellenállások neveinek beállítása
+	// végül az áramkört kirajzoló függvények meghívása
+	
+	oszto.fent=parseInt(document.valaszt.felso.value);	// felső ág típusa
+	oszto.jobb=parseInt(document.valaszt.kime.value);	// kimeneti ág típusa 
+	oszto.lent=parseInt(document.valaszt.also.value);	// alsó ág típusa
+	// alert("KapuTip = " + kapuTip);
+
+	if((oszto.fent<3)&&(oszto.lent<3)&&(oszto.jobb<3))	// alap osztó
+		{ xk.xko2=xk.xko; yk.ylent=yk.yko; }
+	else if(((oszto.fent==3)||(oszto.lent==3))&&(oszto.jobb!=3))  // vízszintesen nyújtott
+		{ xk.xko2=xk.xko+80;  yk.ylent=yk.yko; }
+	else if((oszto.fent!=3)&&(oszto.lent!=3)&&(oszto.jobb==3))	 // fügőlegesen nyújtott
+		{ yk.ylent=yk.yko+80;  xk.xko2=xk.xko; }
+	else		 // vízszintesen és függőlegesen is nyújtott
+		{ xk.xko2=xk.xko+80;  yk.ylent=yk.yko+80; }	
+		
+	xk.xki=xk.xko2+30;  
+	xk.xki2=xk.xki+30;   
+	xk.xki3=xk.xki2+40;  	
+	yk.ylent2=yk.ylent+30;
+	yk.ylent3=yk.ylent2+50;
+	
+	if(oszto.fent>1)   //  több mint 1db ellenállás van a felső ágban
+	{
+		res2.nev="R2";   // ez lesz R2   !!
+		res3.nev="R3";    // a kimeneti ág ellenállása így R3 lesz
+		if(oszto.jobb>1)	// ha a kimeneti ágban is több mint 1db ellenállás van
+			{ res4.nev="R4"; res5.nev="R5"; res6.nev="R6"; }
+		else
+			{ res4.nev=""; res5.nev="R4"; res6.nev="R5";}
+	}
+	else	 //  csak 1db ellenállás van a felső ágban
+	{
+		res2.nev="";
+		res3.nev="R2";    // a kimeneti ág ellenállása így R2 lesz
+		if(oszto.jobb>1)		// ha a kimeneti ágban is több mint 1db ellenállás van
+			{ res4.nev="R3"; res5.nev="R4"; res6.nev="R5"; }
+		else
+			{ res4.nev=""; res5.nev="R3"; res6.nev="R4"; }
+	}
+	if(oszto.lent<2)  { res6.nev=""; }  // a lenti ágban nincs 2. ellenállás
+	if(oszto.lent<1)  { res5.nev=""; }	// a lenti ágban nincs egy ellenállás sem
+	
+	vaszon.clearRect(0,0,xvaszon,yvaszon);	
+	szamvalaszt();
+	osztofelsoag();  
+	osztokimenet();	
+	osztoalsoag();
+				
+	
+}
+
+
+//*********************************************************************************
+
+function osztofelsoag()
+{
+	// felső ág kirajzolása
+
+	rajzcsatlakozo(vaszon,xk.xbe,yk.yfent2,xk.xbe2,yk.yfent2,2,3,"#FF0000");	// felső bemenet	
+	rajzellenallviz(vaszon,xk.xbe2,yk.yfent2,xk.xko,2,"#FF0000");		// felső 1. ellenállás
+	feliratkiir2(vaszon,xk.xbe2,yk.yfent2+15,res1.nev,"#0000FF");
+	rajznyil(vaszon,xk.xbe+6,yk.yfent2+15,xk.xbe+6,yk.ylent-15,2,"#0000FF");  // bemeneti feszültségnyíl
+	oszto.r12=" "+res1.nev;		// a felső ág eredőjének képlete
+
+	if(oszto.fent==2)	// párhuzamos ellenállás van !
+	{
+		rajzellenallviz(vaszon,xk.xbe2,yk.yfent,xk.xko,2,"#FF0000"); // felső 2. ellenállás párhuzamosan
+		rajzcsomopont(vaszon,xk.xbe2,yk.yfent2,xk.xbe2,yk.yfent,2,3,"#FF0000");
+		rajzcsomopont(vaszon,xk.xko,yk.yfent2,xk.xko,yk.yfent,2,3,"#FF0000");
+		feliratkiir2(vaszon,xk.xko+10,yk.yfent-15,res2.nev,"#0000FF");		
+		oszto.r12=oszto.r12+" x "+res2.nev;		// a felső ág eredőjének képlete
+	}
+	if(oszto.fent==3)	// soros ellenállás van !
+	{
+		rajzellenallviz(vaszon,xk.xko,yk.yfent2,xk.xko2,2,"#FF0000");	// felső 2. ellenállás sorosan
+		rajzcsomopont(vaszon,xk.xki,yk.yfent2,xk.xko2,yk.yfent2,2,3,"#FF0000");		// felső kimeneti csomópont
+		feliratkiir2(vaszon,xk.xko,yk.yfent2+15,res2.nev,"#0000FF");	
+		oszto.r12=oszto.r12+" + "+res2.nev;		// a felső ág eredőjének képlete	
+	}
+	else
+	{	
+		rajzcsomopont(vaszon,xk.xki,yk.yfent2,xk.xko,yk.yfent2,2,3,"#FF0000");	// felső kimeneti csomópont
+		
+	}	
+	
+}
+
+
+//*********************************************************************************
+
+function osztoalsoag()
+{
+	// alsó ág kirajzolása
+	
+	rajzcsatlakozo(vaszon,xk.xbe,yk.ylent,xk.xbe2,yk.ylent,2,3,"#FF0000");		// alsó bemenet
+	if(oszto.lent==0)   //  nincs ellenállás az alsó ágban
+	{
+		rajzcsomopont(vaszon,xk.xki,yk.ylent,xk.xbe2,yk.ylent,2,3,"#FF0000");	// alsó kimeneti csomópont
+		oszto.r56=" ";
+	}
+	else	// van ellenállás
+	{
+		rajzellenallviz(vaszon,xk.xbe2,yk.ylent,xk.xko,2,"#FF0000");			// alsó ellenállás
+		feliratkiir2(vaszon,xk.xbe2+5,yk.ylent-25,res5.nev,"#0000FF");
+		oszto.r56=" "+res5.nev;		// az alsó ág eredőjének képlete
+		if(oszto.lent==2)	// párhuzamos ellenállás is van !
+		{
+			rajzellenallviz(vaszon,xk.xbe2,yk.ylent2,xk.xko,2,"#FF0000");
+			rajzcsomopont(vaszon,xk.xbe2,yk.ylent,xk.xbe2,yk.ylent2,2,3,"#FF0000");
+			rajzcsomopont(vaszon,xk.xko,yk.ylent,xk.xko,yk.ylent2,2,3,"#FF0000");
+			feliratkiir2(vaszon,xk.xko,yk.ylent2+10,res6.nev,"#0000FF");	
+			oszto.r56=oszto.r56+" x "+res6.nev;		// az alsó ág eredőjének képlete
+		}
+		if(oszto.lent==3)	// soros ellenállás  is van !
+		{
+			rajzellenallviz(vaszon,xk.xko,yk.ylent,xk.xko2,2,"#FF0000");	
+			rajzcsomopont(vaszon,xk.xki,yk.ylent,xk.xko2,yk.ylent,2,3,"#FF0000");		// alsó kimeneti csomópont
+			feliratkiir2(vaszon,xk.xko+20,yk.ylent+15,res6.nev,"#0000FF");
+			oszto.r56=oszto.r56+" + "+res6.nev;		// az alsó ág eredőjének képlete
+		}
+		else
+			rajzcsomopont(vaszon,xk.xki,yk.ylent,xk.xko,yk.ylent,2,3,"#FF0000");		// alsó kimeneti csomópont
+	
+	}
+}
+
+//*********************************************************************************
+
+function osztokimenet()
+{
+	// kimeneti ág (két kimeneti pont között) kirajzolása
+	
+	rajzellenallfug(vaszon,xk.xki,yk.yfent2,yk.yko,2,"#FF0000");	// 1. kimeneti ellenállás
+	feliratkiir3(vaszon,xk.xki-20,yk.yko-50,res3.nev);
+	rajznyil(vaszon,xk.xki3,yk.yfent2+15,xk.xki3,yk.ylent-15,2,"#0000FF");  // kimeneti feszültségnyíl
+	oszto.r34=" "+res3.nev;		// a kimeneti ág eredőjének képlete
+	
+	if(oszto.jobb==2)	// 2. párhuzamos ellenállás van !
+	{
+		rajzellenallfug(vaszon,xk.xki2,yk.yfent2,yk.yko,2,"#FF0000");
+		rajzcsomopont(vaszon,xk.xki2,yk.yfent2,xk.xki,yk.yfent2,2,3,"#FF0000");
+		rajzcsomopont(vaszon,xk.xki2,yk.yko,xk.xki,yk.yko,2,3,"#FF0000");
+		feliratkiir2(vaszon,xk.xki2+15,yk.yko-50,res4.nev,"#0000FF");	
+		oszto.r34=oszto.r34+" x "+res4.nev;		// a kimeneti ág eredőjének képlete
+		
+	}
+	if(oszto.jobb==3)	// 2. soros ellenállás van !
+	{ 
+		rajzellenallfug(vaszon,xk.xki,yk.yko,yk.ylent,2,"#FF0000");	
+		feliratkiir2(vaszon,xk.xki+15,yk.yko+40,res4.nev,"#0000FF");
+		feliratkiir(vaszon,xk.xki3+25,yk.yko,"Uki");
+		feliratkiir(vaszon,xk.xbe-13,yk.yko,"Ube");
+		oszto.r34=oszto.r34+" + "+res4.nev;		// a kimeneti ág eredőjének képlete
+		
+	}
+	else
+	{  
+		feliratkiir(vaszon,xk.xki3+25,yk.ylent-50,"Uki");  
+		feliratkiir(vaszon,xk.xbe-13,yk.ylent-50,"Ube");
+	}
+	rajzcsatlakozo(vaszon,xk.xki3,yk.yfent2,xk.xki,yk.yfent2,2,3,"#FF0000");		// felső kimenet
+	rajzcsatlakozo(vaszon,xk.xki3,yk.ylent,xk.xki,yk.ylent,2,3,"#FF0000");	// alsó kimenet
+	
+}
+
+
+//*********************************************************************************
+
+function szamvalaszt()
+{
+	// alkatrészek értékeinek véletlenszerű kiválasztása
+	var szamok;
+	var szam;
+	var i;
+
+	var kisebb=true;
+	
+	oszto.sor=2; 	// hány részre osztódik a bemeneti feszültség, minimum 2
+	oszto.rbe=0;	// az eredő a bemenet felől nézve
+	
+	if(oszto.fent>2)  oszto.sor++;  // felső ágban egy plusz soros ellenállás
+	if(oszto.jobb>2)  oszto.sor++;  // kimeneti ágban egy plusz soros ellenállás
+	if(oszto.lent>0)  oszto.sor++;  // alsó ágban egy plusz ellenállás
+	if(oszto.lent>2)  oszto.sor++;  // alsó ágban még egy soros ellenállás
+
+	szamok=randomszamok(oszto.sor-1,12);  // 1 híján kisorsoljuk a soros osztó értékeket
+	for(i in szamok) oszto.rbe+=szamok[i];  // az eredő az utolsó soros osztó nélkül
+	i=0;
+	while(kisebb)	// az utolsó szám választása, úgy hogy az eredő nem lehet bármennyi !!
+	{
+		if(eredotar[i]>oszto.rbe) kisebb=false;
+		else i++;	
+	}
+	szamok.push(eredotar[i]-oszto.rbe);	// megvan az utolsó szám
+	oszto.rbe=eredotar[i];
+	
+	if(oszto.lent==2)	// alsó ágban párhuzamos ellenállások
+	{
+		szam=szamok.pop();  // a kisorsolt érték, ami a 2 ellenállás eredője
+		i=randomszamok(1,3)[0]-1;	// sorsolunk hozzá két párhuzamos értéket
+		res5.ertek=parhtar[szam][i][0];
+		res6.ertek=parhtar[szam][i][1];
+	}
+	else if(oszto.lent>0)  // van legalább 1db soros ellenállás az alsó ágban
+	{
+		szam=szamok.pop();  // a kisorsolt érték
+		res5.ertek=szam;	// a soros ellenállásé
+		if(oszto.lent==3)		// van egy plusz soros ellenállás az alsó ágban
+		{
+			szam=szamok.pop();  // a kisorsolt érték
+			res6.ertek=szam;	// a soros ellenállásé
+		}
+	}
+	
+	if(oszto.jobb==2)	// kimeneti ágban párhuzamos ellenállások
+	{
+		szam=szamok.pop();  // a kisorsolt érték, ami a 2 ellenállás eredője
+		i=randomszamok(1,3)[0]-1;	// sorsolunk hozzá két párhuzamos értéket
+		res3.ertek=parhtar[szam][i][0];
+		res4.ertek=parhtar[szam][i][1];
+	}
+	else
+	{
+		szam=szamok.pop();  // a kisorsolt érték
+		res3.ertek=szam;	// a soros ellenállásé
+		if(oszto.jobb==3)		// van egy plusz soros ellenállás a kimeneti ágban
+		{
+			szam=szamok.pop();  // a kisorsolt érték
+			res4.ertek=szam;	// a soros ellenállásé
+		}
+	}
+	
+	if(oszto.fent==2)	// felső ágban párhuzamos ellenállások
+	{
+		szam=szamok.pop();  // a kisorsolt érték, ami a 2 ellenállás eredője
+		i=randomszamok(1,3)[0]-1;	// sorsolunk hozzá két párhuzamos értéket
+		res1.ertek=parhtar[szam][i][0];
+		res2.ertek=parhtar[szam][i][1];
+	}
+	else
+	{
+		szam=szamok.pop();  // a kisorsolt érték
+		res1.ertek=szam;	// a soros ellenállásé
+		if(oszto.fent==3)		// van egy plusz soros ellenállás a felső ágban
+		{
+			szam=szamok.pop();  // a kisorsolt érték
+			res2.ertek=szam;	// a soros ellenállásé
+		}
+	}
+	
+	i=randomszamok(1,10)[0]-1;	// sorsolunk bemeneti feszültséget
+	ube.ertek=ubetar[i];
+	
+	ertekekkiir();
+}	
+
+//*********************************************************************************
+
+
+function ertekekkiir()
+{
+	vaszon.clearRect(0,yk.ylent3,xvaszon,yvaszon);
+	feliratkiir2(vaszon,xk.xbe,yk.ylent3,ube.nev+" = "+ube.ertek+ube.egys,"#0000FF");
+	feliratkiir2(vaszon,xk.xbe,yk.ylent3+20,res1.nev+" = "+res1.ertek+res1.egys,"#0000FF");
+	if(oszto.fent>1)
+		feliratkiir2(vaszon,xk.xbe,yk.ylent3+40,res2.nev+" = "+res2.ertek+res2.egys,"#0000FF");
+	feliratkiir2(vaszon,xk.xko,yk.ylent3,res3.nev+" = "+res3.ertek+res3.egys,"#0000FF");	
+	if(oszto.jobb>1)		
+		feliratkiir2(vaszon,xk.xko,yk.ylent3+20,res4.nev+" = "+res4.ertek+res4.egys,"#0000FF");
+	if(oszto.lent>0)	
+		feliratkiir2(vaszon,xk.xko+100,yk.ylent3,res5.nev+" = "+res5.ertek+res5.egys,"#0000FF");
+	if(oszto.lent>1)	
+		feliratkiir2(vaszon,xk.xko+100,yk.ylent3+20,res6.nev+" = "+res6.ertek+res6.egys,"#0000FF");
+		
+	rajzgomb(vaszon,xvaszon-75,yk.ylent3,65,30,"Új érték")
+
+	feliratkiir2(vaszon,xk.xbe,yk.ylent3+80,"Hány volt lesz a kimeneti feszültség ? ","#FF0000");
+	feliratkiir2(vaszon,xk.xbe,yk.ylent3+110,"Tippelj ! ( tizedespontot használj ! )","#FF0000");
+	rajzgomb(vaszon,xvaszon-75,yk.ylent3+80,65,30,"Help")
+	rajzgomb(vaszon,xvaszon-75,yk.ylent3+130,65,30,"Megold")
+	document.valaszt.tipp.value = "";
+	
+}
+
+//*********************************************************************************
+
+
+function ertekel()
+{
+	//  a tippelt érték kiértékelése
+	var tipp;
+	var hiba;
+	tipp=parseFloat(document.valaszt.tipp.value);	// Uki tippelt értéke
+	
+	szamol();
+	hiba=Math.abs(uki.ertek-tipp);
+	
+	vaszon.clearRect(0,yk.ylent3+170,xvaszon,yvaszon);
+	
+	if(isNaN(tipp))	// nem értelmezhető számként a beírt tipp
+	{
+		feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+170,"tipp: ???","#0000FF");
+		feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+200,"Valami nem OK !!!  számot írj  !","#0000FF");
+	}
+	else
+	{
+		feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+170,"tipp: "+tipp+" V","#0000FF");
+		if(tipp>ube.ertek)	// túl nagy érték (nem lehet)
+		{
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+200," Ejnye !!  Uki nem lehet nagyobb mint Ube !!! ","#FF0000");
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+230,"Próbáld újra !","#FF0000");
+		}
+		else if(tipp<0)	// negatív kimeneti feszültség !
+		{
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+200," Nem jó az előjel !!! Gondold ezt át !","#FF0000");
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+230,"Próbáld újra !","#FF0000");
+		}
+		else if(uki.ertek==tipp)	// pontos tipp
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+200," Tökéletes válasz !!! ","#009900");
+			
+		else if(100*hiba/uki.ertek<3)	// 3% alatti a pontatlanság, fogadjuk el jó válasznak !
+		{
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+200," Jó válasz !!! ","#0099FF");
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+230,"( a pontos érték: "+uki.ertek+" V )","#0099FF");
+		}
+		else if(100*hiba/uki.ertek<10)	// 10%-on belül
+		{
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+200," Már nagyon közel vagy  !!! ","#0000AA");
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+230,"Próbáld újra !","#0000AA");
+		}	
+		else if(100*hiba/uki.ertek<30)	// 30%-on belül
+		{
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+200," Közel vagy, de még nem az igazi !!! ","#0000FF");
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+230,"Próbáld újra !","#0000FF");
+		}	
+		else	// 30%-nál nagyobb az eltérés
+		{
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+200," Nem jó !!! Gondold ezt át !","#FF0000");
+			feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+230,"Próbáld újra !","#FF0000");
+		}	
+	}
+	document.valaszt.tipp.value = "";
+	
+}
+
+
+//*********************************************************************************
+
+function szamol()
+{
+	//  Uki kiszámítása
+
+	oszto.rki=res3.ertek;	// a kimeneti ág eredője, ha csak 1db ellenállás van (Res3)
+	if(oszto.jobb==2)	// 2. párhuzamos ellenállás van a kimeneti ágban !
+		oszto.rki=res3.ertek*res4.ertek/(res3.ertek+res4.ertek);	// a kimeneti ág eredője, Res3 x Res4 (replusz)
+	if(oszto.jobb==3)	// 2. soros ellenállás van !
+		oszto.rki+=res4.ertek;	// a kimeneti ág eredője, Res3 + Res4
+	uki.ertek=ube.ertek*oszto.rki/oszto.rbe;	// a helyes kimeneti feszültség
+
+}
+
+
+//*********************************************************************************
+
+function segit()
+{
+	var keplet;
+	
+	if(oszto.lent>0)	// van ellenállás a lenti ágban
+		keplet="Uki = Ube * ( "+oszto.r34+" ) / ( "+oszto.r12+" + "+oszto.r34+" + "+oszto.r56+" )";
+	else
+		keplet="Uki = Ube * ( "+oszto.r34+" ) / ( "+oszto.r12+" + "+oszto.r34+" )";
+	vaszon.clearRect(0,yk.ylent3+170,xvaszon,yvaszon);
+	feliratkiir2(vaszon,xk.xbe-25,yk.ylent3+170,"a helyes képlet: ","#0000FF");
+	feliratkiir2(vaszon,xk.xbe-25,yk.ylent3+200,keplet);
+
+}
+
+
+//*********************************************************************************
+
+function megoldas()
+{
+	szamol();
+	segit();
+	feliratkiir2(vaszon,xk.xbe-10,yk.ylent3+230," Uki = "+uki.ertek+" V ","#DD0000");
+
+}
+
+
+
+//*********************************************************************************
+
+function feliratkiir3(lap,x,y,str)
+{
+	lap.font="16px Arial";
+ 	lap.textBaseline = "top";
+	lap.textAlign = "right"; 	
+	lap.fillStyle = "#0000FF";
+	lap.fillText(str,x,y);
+
+}
+
+
+//*********************************************************************************
+
+function feliratkiir2(lap,x,y,str,rgb)
+{
+	lap.font="16px Arial";
+ 	lap.textBaseline = "top";
+	lap.textAlign = "left"; 	
+	lap.fillStyle = rgb;
+	lap.fillText(str,x,y);
+
+}
+
+
+//*********************************************************************************
+
+function feliratkiir(lap,x,y,str)
+{
+	lap.font="16px Arial";
+ 	lap.textBaseline = "top";
+	lap.textAlign = "center"; 	
+	lap.fillStyle = "#FF00FF";
+	lap.fillText(str,x,y);
+
+}
+
+
+//*********************************************************************************
+
+function rajzcsomopont(lap,x1,y1,x2,y2,w,r,rgb)
+{    
+	// összekötő vezeték két pont között, 
+	// az első pontnál (x1,y1) csomóponttal, 
+	//  "r" a csomópont sugara  !!
+	// "w" vonal vastagság
+	// "lap" referencia a rajzvászonra !
+	//  arc(x,y,r,startangle,endangle)
+
+	lap.lineWidth=w;
+	lap.strokeStyle= rgb;	
+	lap.fillStyle= rgb;
+	
+	lap.beginPath();
+	lap.arc(x1,y1,r,0,2*Math.PI);
+	lap.fill();
+	lap.closePath();	
+	lap.stroke();
+		
+	//lap.fillStyle = "#221999";
+	lap.beginPath();
+	lap.moveTo(x2,y2);
+	lap.lineTo(x1,y1);   // vonal
+	lap.closePath();	
+	lap.stroke();
+
+}
+
+
+//*********************************************************************************
+
+function rajzcsatlakozo(lap,x1,y1,x2,y2,w,r,rgb)
+{    
+	// összekötő vezeték két pont között, 
+	// az első pontnál (x1,y1) csatlakozó ponttal, 
+	//  "r" a csomópont sugara  !!
+	// "w" vonal vastagság
+	// "lap" referencia a rajzvászonra !
+	//  arc(x,y,r,startangle,endangle)
+
+	lap.lineWidth=w;
+	lap.strokeStyle= rgb;	
+	lap.fillStyle = "#FFFFFF";
+	
+	lap.beginPath();
+	lap.moveTo(x2,y2);
+	lap.lineTo(x1,y1);   // vonal
+	lap.closePath();	
+	lap.stroke();
+
+	lap.beginPath();
+	lap.arc(x1,y1,r,0,2*Math.PI);
+	lap.fill();
+	lap.closePath();	
+	lap.stroke();
+		
+}
+
+
+
+//*********************************************************************************
+
+function rajzellenallviz(lap,x1,y,x2,w,rgb)
+{    
+	// vízszintes ellenállás rajzolása
+	//  x1, x2, y  bal és jobb csatlakozási pont koordináták 
+	// "w" vonal vastagság
+	// "lap" referencia a rajzvászonra !
+	var xe= (x2-x1)/20;
+	var ye= xe;
+	
+	if(x2>=x1+20)
+	{
+		lap.clearRect(x1+4*xe,y-2*ye,12*xe,4*ye);   // a terület törlése
+		lap.lineWidth=w;
+		lap.strokeStyle= rgb;	
+		//lap.fillStyle = "#221999";
+	
+		lap.beginPath();
+		lap.strokeRect(x1+4*xe,y-2*ye,12*xe,4*ye);  // ellenállás test
+		lap.moveTo(x1,y);
+		lap.lineTo(x1+4*xe,y);   // bal oldali láb
+		lap.moveTo(x1+16*xe,y);
+		lap.lineTo(x2,y);   // bal oldali láb
+		lap.closePath();	
+		lap.stroke();
+	}
+	
+}
+
+//*********************************************************************************
+
+function rajzellenallfug(lap,x,y1,y2,w,rgb)
+{    
+	// függőleges ellenállás rajzolása
+	//  x, y1, y2  fenti és lenti csatlakozási pont koordináták 
+	// "w" vonal vastagság
+	// "lap" referencia a rajzvászonra !
+	var ye= (y2-y1)/20;
+	var xe= ye;
+	
+	if(y2>=y1+20)
+	{
+		lap.clearRect(x-2*xe,y1+4*ye,4*xe,12*ye);   // a terület törlése
+		lap.lineWidth=w;
+		lap.strokeStyle= rgb;	
+		//lap.fillStyle = "#221999";
+	
+		lap.beginPath();
+		lap.strokeRect(x-2*xe,y1+4*ye,4*xe,12*ye);  // ellenállás test
+		lap.moveTo(x,y1);
+		lap.lineTo(x,y1+4*ye);   // bal oldali láb
+		lap.moveTo(x,y1+16*ye);
+		lap.lineTo(x,y2);   // bal oldali láb
+		lap.closePath();	
+		lap.stroke();
+	}
+	
+}
+
+
+//*********************************************************************************
+
+function rajznyil(lap,x1,y1,x2,y2,w,rgb)
+{
+	// feszültség nyíl rajzolása
+	//  x1, y1, x2, y2  végpontok koordinátái 
+	// "w" vonal vastagság
+	// "lap" referencia a rajzvászonra !
+	
+		lap.lineWidth=w;
+		lap.strokeStyle= rgb;
+		lap.beginPath(); 
+		lap.moveTo(x1,y1);
+		lap.lineTo(x2,y2);
+		
+		
+		if(x2==x1)	// függőleges nyíl
+		{
+			if(y2>y1)	// lefelé mutat
+			{
+				lap.moveTo(x2-4,y2-15);
+				lap.lineTo(x2,y2);
+				lap.lineTo(x2+4,y2-15);
+			}
+			else	// felfelé mutat
+			{
+				lap.moveTo(x2-4,y2+15);
+				lap.lineTo(x2,y2);
+				lap.lineTo(x2+4,y2+15);
+			}
+		}	
+		
+		else if(y2==y1)	// vízszintes nyíl
+		{
+			if(x2>x1)	// jobbra mutat
+			{
+				lap.moveTo(x2-15,y2-4);
+				lap.lineTo(x2,y2);
+				lap.lineTo(x2-15,y2+4);
+			}
+			else	// balra mutat
+			{
+				lap.moveTo(x2+15,y2-4);
+				lap.lineTo(x2,y2);
+				lap.lineTo(x2+15,y2+4);
+			}	
+			
+		}	
+		else //  ferde nyíl	
+		{	
+					//  még nincs kész :)
+		}
+				
+		//lap.closePath();					
+		lap.stroke();		 					
+
+}
+
+
+
+
+//*********************************************************************************
+
+function rajzgomb(lap,x,y,w,h,text)
+{    
+	// nyomógomb rajzolása
+	//  x, y  bal-felső pont koordinátái 
+	// "w" szélesség, "h" magasság
+	// "lap" referencia a rajzvászonra !
+	
+
+	lap.clearRect(x,y,w,h);   // a terület törlése
+	lap.lineWidth=w;
+	//lap.strokeStyle= rgb;	
+	lap.fillStyle = "#CCBB00";
+	lap.beginPath();
+	lap.fillRect(x,y,w,h);  //gomb
+	lap.closePath();	
+	lap.stroke();
+	
+	lap.font="14px Arial";
+ 	lap.textBaseline = "top";
+	lap.textAlign = "left"; 	
+	lap.fillStyle = "#FF0000";
+	lap.fillText(text,x+7,y+7);
+	
+}
+
+
+//*********************************************************************************
+
+function klikkvaszon(event)
+{
+	var szoveg;
+	var x;
+	var y;
+	
+	x = event.offsetX;   // egérklikk X koordináta
+	y = event.offsetY;   // egérklikk Y koordináta
+	
+	 
+	if((x>xvaszon-75) && (x<xvaszon-10) && (y>yk.ylent3) && (y<yk.ylent3+30)) // ha katt az "Új érték"-re
+	{
+		szamvalaszt();		
+	} 
+	
+	if((x>xvaszon-75) && (x<xvaszon-10) && (y>yk.ylent3+80) && (y<yk.ylent3+110)) // ha katt a "Help"-re
+	{
+		segit();		
+	} 		 
+	 
+	if((x>xvaszon-75) && (x<xvaszon-10) && (y>yk.ylent3+130) && (y<yk.ylent3+160)) // ha katt a "Megold"-ra
+	{
+		megoldas();		
+	} 		 
+	 
+}
+
+//******************************************************************************
+
+function randomszamok(db,maxszam)
+
+// 	véletlen számok generálása  (1 és "maxszam"  között)
+//	 lehet  ismétlődés !!!
+//	db -->  hány darab szám kell (pl. 5-ös lottó esetén 5)
+// maxszam -->  tartomány vége, legnagyobb szám 
+
+ {
+	var i=0;
+	var number=0; 
+	const ptip1= [];				// vector  véletlen számok tárolására
+	
+	for(i=0;i<db;i++)				// vector feltöltése
+	{
+		number = Math.ceil(Math.random()*maxszam);   // 1 és "maxszam" közötti véletlen szám
+		ptip1.push(number);					// új szám beszúrása a vector végére
+	}
+	
+	return ptip1;
+	 
+ }
+
+
+
+//*********************************************************************************
+
+
+</script>
+</body>
+</html>

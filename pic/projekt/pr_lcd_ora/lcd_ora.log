@@ -1,0 +1,26 @@
+0	1	mikroCPIC1618.exe -MSF -DBG -pP16F887 -RA -DL -O11111114 -fo16 -N"D:\prog\avr_pic\pic16f887\lcd_ora_ok\lcd_ora.mcppi" -SP"C:\Mikroelektronika\mikroC PRO for PIC\defs\" -SP"C:\Mikroelektronika\mikroC PRO for PIC\Uses\P16\" -SP"D:\prog\avr_pic\pic16f887\lcd_ora_ok\" "lcd_ora.c" "__Lib_Math.mcl" "__Lib_MathDouble.mcl" "__Lib_System.mcl" "__Lib_Delays.mcl" "__Lib_CType.mcl" "__Lib_CString.mcl" "__Lib_CStdlib.mcl" "__Lib_CMath.mcl" "__Lib_MemManager.mcl" "__Lib_Conversions.mcl" "__Lib_Sprinti.mcl" "__Lib_Sprintl.mcl" "__Lib_Time.mcl" "__Lib_Trigonometry.mcl" "__Lib_Button.mcl" "__Lib_Keypad4x4.mcl" "__Lib_Manchester.mcl" "__Lib_OneWire.mcl" "__Lib_PS2.mcl" "__Lib_Sound.mcl" "__Lib_SoftI2C.mcl" "__Lib_SoftSPI.mcl" "__Lib_SoftUART.mcl" "__Lib_ADC_88X.mcl" "__Lib_EEPROM.mcl" "__Lib_FLASH_RW.mcl" "__Lib_I2C_c34.mcl" "__Lib_PWM_c21.mcl" "__Lib_SPI_c345.mcl" "__Lib_UART_c67.mcl" "__Lib_PortExpander.mcl" "__Lib_CANSPI.mcl" "__Lib_CF.mcl" "__Lib_GlcdFonts.mcl" "__Lib_Glcd.mcl" "__Lib_LcdConsts.mcl" "__Lib_Lcd.mcl" "__Lib_RS485.mcl" "__Lib_S1D13700.mcl" "__Lib_T6963C.mcl" "__Lib_SPIGlcd.mcl" "__Lib_SPILcd.mcl" "__Lib_SPILcd8.mcl" "__Lib_SPIT6963C.mcl" "__Lib_EthEnc28j60.mcl" "__Lib_EthEnc24j600.mcl" "__Lib_TouchPanel.mcl"	 
+hint: 0	1139	Available RAM: 352 [bytes], Available ROM: 8192 [bytes]	 
+diagnostics: 0	122	Compilation Started	P16F887.c
+diagnostics: 973	123	Compiled Successfully	P16F887.c
+diagnostics: 0	122	Compilation Started	__Lib_Delays.c
+diagnostics: 123	123	Compiled Successfully	__Lib_Delays.c
+diagnostics: 0	122	Compilation Started	__Lib_MemManager.c
+warning: 34	1508	Implicit conversion of int to ptr	__Lib_MemManager.c
+diagnostics: 231	123	Compiled Successfully	__Lib_MemManager.c
+diagnostics: 0	122	Compilation Started	__Lib_GlcdFonts.c
+diagnostics: 1207	123	Compiled Successfully	__Lib_GlcdFonts.c
+diagnostics: 0	126	All files Preprocessed in 93 ms	 
+diagnostics: 0	122	Compilation Started	lcd_ora.c
+hint: 206	1163	Variable 'txt' has been declared, but not used	lcd_ora.c
+diagnostics: 264	123	Compiled Successfully	lcd_ora.c
+hint: 54	1164	Variable 'felso4' has been eliminated by optimizer	lcd_ora.c
+hint: 207	1164	Variable 'ora_jar' has been eliminated by optimizer	lcd_ora.c
+hint: 208	1164	Variable 'ora_set' has been eliminated by optimizer	lcd_ora.c
+hint: 209	1164	Variable 'perc_set' has been eliminated by optimizer	lcd_ora.c
+diagnostics: 0	127	All files Compiled in 110 ms	 
+hint: 0	1144	Used RAM (bytes): 42 (12%)  Free RAM (bytes): 310 (88%)	Used RAM (bytes): 42 (12%)  Free RAM (bytes): 310 (88%)
+hint: 0	1144	Used ROM (program words): 2040 (25%)  Free ROM (program words): 6152 (75%)	Used ROM (program words): 2040 (25%)  Free ROM (program words): 6152 (75%)
+diagnostics: 0	125	Project Linked Successfully	lcd_ora.mcppi
+diagnostics: 0	128	Linked in 202 ms	 
+diagnostics: 0	129	Project 'lcd_ora.mcppi' completed: 1060 ms	 
+diagnostics: 0	103	Finished successfully: 11 aug. 2015, 11:08:14	lcd_ora.mcppi

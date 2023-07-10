@@ -1,0 +1,20 @@
+main
+	__CC2DW
+		____DoICP
+	kezdo_beall
+	idoki7szegmre
+		Div_8x8_U
+		Mul_8x8_U
+	Div_8x8_U
+	ntc_lekerdez
+		____DoICP
+		Mul_16x16_U
+		Div_16x16_S
+			Div_16x16_S_L
+		Div_32x32_S
+			SDIV3232L
+			COMFREM
+	hom7szegmre
+		Div_16x16_S
+			Div_16x16_S_L
+interrupt

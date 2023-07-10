@@ -1,0 +1,103 @@
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+    margin: 0px;
+	background: url('kek.jpg') no-repeat;
+	background-size: cover;
+	color: white;
+	font-size: 20px;
+	font-family: 'Raleway', sans-serif;
+}
+
+img {
+	max-width: 100%;
+}
+
+h1 {
+	text-align: center;
+	font-size: 60px;
+	font-weight: 500;
+	border-top: 3px dashed rgba(160,160,0,.7);
+	border-bottom: 3px dashed rgba(160,160,0,.7);
+	padding: 15px 0;
+	margin: 20px 0;
+	color: orange;
+	background: rgba(220,220,220,.3);
+}
+
+.wrapper {
+	max-width: 1800px;
+	margin: 0 auto;
+}
+
+.content {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	/* vagy  
+	 flex-flow: row nowrap   */
+	
+}
+
+nav {
+	background: rgba(0,0,150,.7);
+	flex-basis: 15vw;
+}
+
+
+main {
+	flex-basis: 85vw;
+}
+
+
+nav ul {
+	margin: 0;
+	list-style: none;
+	padding: 30px 10px 10px 10px;
+}	
+
+
+nav li {
+	border-bottom: 1px dashed rgba(240,240,240,.4);
+	padding: 15px;
+}	
+	
+nav a {
+	color: white;
+	display:block;
+	text-decoration: none;
+}	
+	
+nav a:hover {
+	background: rgba(100,100,100,.8);
+} 
+
+	
+.images{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+}	
+	
+.imgbox {
+	flex: 1;
+	min-width: 250px;
+	margin: 0 10px 20px 10px;
+	padding: 0 0 10px 0;	
+}
+
+.imgbox a {
+	color: red;
+	text-decoration: none;
+	padding: 0 20px 0  0;
+}	
+	
+.imgbox a:hover {
+	background: rgba(100,100,100,.8);
+} 
+
+
+

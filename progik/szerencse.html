@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">	
+<title>Szerencsejáték</title>	
+<style type="text/css">
+body {
+	color: red;
+	background-color: yellow
+}
+h1, h2 {
+	color: green;
+}
+h3, h4, h5, h6 {
+	color: red;
+}
+p {
+	text-align: center;
+	color: black;
+	font-family: arial
+}
+p.right {text-align: right}	/* class="right"   tulajdonságú bekezdésekre */
+p.left {text-align: left}
+.center { text-align: center }  /* minden "center" osztályú elem középre !! */
+#menu {color: green}   /* Id="menu" elemre vonatkozik!! */
+ul {
+	float:left;
+	width:100%;
+	padding:0;
+	margin:0;
+	list-style-type:none;
+}
+a {
+	float:left;
+	width:6em;
+	color:white;
+	background-color:purple;
+	padding:0.2em 0.6em;
+	border-right:1px solid white;
+}
+a:hover { background-color:#ff3300}
+l
+</style>
+</head>
+
+<body>
+<form name="combinations">
+<h1>Lottó, Kenó, Puttó variációk készítése</h1>
+<h3 id="gametype">Játék típus:
+</h3>
+<select name="games" onchange="gamesel()">
+	<option value="5">Lottó 5</option>
+	<option value="6">Lottó 6</option>
+	<option value="7">Lottó 7</option>
+	<option value="8">Puttó</option>
+	<option value="9" selected>Kenó</option>
+	<option value="4">Euro Jackpot</option>
+</select>
+<h4 id="kenotype">Kenó típus:
+</h4>
+<select id="kenosel" name="keno" onchange="gamesel()">
+	<option value="10" selected>10</option>
+	<option value="9">9</option>
+	<option value="8">8</option>
+	<option value="7">7</option>
+	<option value="6">6</option>
+	<option value="5">5</option>
+	<option value="4">4</option>
+	<option value="3">3</option>
+	<option value="2">2</option>
+	<option value="1">1</option>
+</select>
+<br><br>
+<label> Hány darab szám legyen kombinálva </label>
+<input type="text" name="count" value="10" size=5 onchange="numbersel()">
+<br><br>
+Megjátszandó számok:    
+<br>
+<textarea name="numbers" id="num" rows=3 cols=30>
+</textarea>
+<input type="button" name="numbsel" value="Új számok választása" onClick="numbersel()">
+<br><br>
+Hibapont:
+<select name="fault" onchange="tipgen()">
+<option value="0" selected>0</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
+<option value="5">5</option>
+</select>
+<br><br>
+Tippek: <br><br>
+<textarea name="combtips" id="tips" rows=50 cols=60>
+</textarea>
+<br><br>
+</form>
+<SCRIPT LANGUAGE="JavaScript">
+
+var range=80;		// számtartomány
+// lottó5 -> 90  lottó6 -> 45  lottó7 -> 35  puttó -> 20  kenó -> 80  eurojackpot -> 50
+
+var number=10;		// egy szelvényen megjátszható számok
+// lottó5 -> 5  lottó6 -> 6  lottó7 -> 7  puttó -> 8     eurojackpot -> 5
+// kenó -> 10 vagy 9 vagy 8 vagy 7 vagy 6 vagy 5 vagy 4  !!
+var faults=0;   // hibapontok
+var pnum = new Array();			// vector  a megjátszandó számokhoz
+var tips = new Array();			// vector tömb a szám kombinációkhoz
+
+
+//******************************************************************************
+
+function gamesel()
+ {
+	var game; 
+	var keno;
+	
+	game=parseInt(document.combinations.games.value);
+	// document.kombinaciok.be_szamok.value = "jatektipus: " + jatektipus +" kenótipus: " + kenotipus;	
+
+	switch(game)
+		 {
+			 case 5: number=5;   // 5-ös lottó,  5 szám  90-ből
+					 range=90;
+					 document.getElementById("kenosel").disabled = true;
+					break;
+			 case 6: number=6;   //  6-os lottó,  6 szám  45-ből
+					 range=45;
+					 document.getElementById("kenosel").disabled = true;
+					break;
+			 case 7: number=7;   // 7-es lottó,  7 szám  35-ből
+					 range=35;
+					 document.getElementById("kenosel").disabled = true;
+					break;
+			 case 8: number=8;   //  Puttó,  8 szám  20-ból
+					 range=20;
+					 document.getElementById("kenosel").disabled = true;
+					break;	
+			 case 4: number=5;   // EuroJackPot,  5 szám  50-ből
+					 range=50;
+					 document.getElementById("kenosel").disabled = true;
+					break;						
+			 case 9:   			 // Kenó,   80-ból  valamennyi szám !! (10, 9, 8, 7, 6, ...)
+					 document.getElementById("kenosel").disabled = false;
+					 keno=parseInt(document.combinations.keno.value); 
+					 number=keno;
+					 range=80;
+					break;	
+			 
+		 }	
+	document.combinations.count.value=number;
+	numbersel();
+	 
+ }	 
+ 
+ 
+//******************************************************************************
+
+function numbersel()
+ { 
+	
+	var odds;
+	var text;
+	var combi;		// combination, mennyi számból csinuljunk kombinációs tippet	
+	var x;
+	
+	combi = parseInt(document.combinations.count.value); 
+	if(combi<number)
+		{ alert("Kevés a darabszám !!  legyen   >= " + number); }
+	else 
+	 {	 
+		x=comb(combi,number);
+		if(x>500000)
+			{ alert("Túl sok a darabszám !! "); }
+		else
+		 {
+			pnum=randomTip(combi,range);	
+			// pnum.sort(function(a, b){return a - b}); 
+			text = pnum.join("  ");   
+			document.combinations.numbers.value = text;
+			tipgen();
+		 }
+	 }	
+ }	 
+ 
+
+//******************************************************************************
+
+function tipgen()
+ {
+	var pfaulttips = new Array();			// vector tömb a hibapontos kombinációkhoz	
+	var text;
+	var x;
+
+	if(pnum.length<number)
+	 {
+		 text = "Először válassz számokat !! \n Klikk az 'Új számok választása' gombra ! ";
+		 document.combinations.combtips.value = text;
+	 }
+	else 
+	 {
+		if(range==80) odds=comb2(80,20,number);
+		else odds=comb(range,number);
+		text=" telitalálat esélye 1 tipp esetén: \n  1 : " + odds;
+		document.combinations.combtips.value = text;
+		tips = combinationTip(number,pnum);
+		text += "\n Kombinációk száma öszesen (0 hibapont):  " + tips.length + " \n "; 
+		document.combinations.combtips.value = text; 
+		faults = parseInt(document.combinations.fault.value);  
+		if(faults==0)
+		 {
+			if(tips.length<300)
+				for(x of tips)
+					{ text += x.join("  ") + "\n \n";   }
+			else
+				{ text += " \n Túl sok tipp !! Válassz nagyobb hibapontot !"; }
+			document.combinations.combtips.value = text;
+		 }
+		else
+		 {		
+			if(tips.length>1)
+				{ pfaulttips=filtercombinationTip(faults,tips);	}	// szűrés !! hibapontos kombináció készítése
+			else
+				{ pfaulttips=tips; } // csak egy tipp van, felesleges szűrni
+			text += "\n" + faults + " hibapontos tippek: (" + pfaulttips.length + " db) \n ";  
+			if(pfaulttips.length<300)
+				for(x of pfaulttips)
+					{ text += x.join("  ") + "\n \n";   }
+			else
+				{ text += " \n Túl sok tipp !! Válassz nagyobb hibapontot !"; }
+			document.combinations.combtips.value = text;
+	
+		  }
+	
+	 }
+
+ }	 
+ 
+
+//
+
+
+
+//******************************************************************************
+// 	véletlen számok generálása  (1 és "max"  között)
+//	nem lehet  ismétlődés !!!
+//	tip -->  hány darab szám kell (pl. 5-ös lottó esetén 5)
+// 	numbermax -->  tartomány vége, legnagyobb szám 
+//						(pl. 5-ös lottó esetén 90)
+//******************************************************************************
+
+function randomTip(tip,numbermax)
+ {
+	var i=0;
+	var j=0;
+	var number=0; 
+	var isIt=false;
+	var already=false;
+	var ptip1= new Array();				// vector  véletlen számok tárolására
+	
+	// srand(time(0));
+	for(i=0;i<tip;i++)				// vector feltöltése
+	{
+		isIt=false;	
+		while(!isIt)						// egy új véletlen szám keresése, ami még nem volt
+		{
+			number = Math.ceil(Math.random()*numbermax);   // 1 és "numbermax" közötti véletlen szám
+			j=0;	
+			already=false;
+			while(!already && (j<ptip1.length))	// volt-e már ez a szám ?
+			{ 
+				if(number==ptip1[j]) already=true;
+				j++;
+			}
+			if(!already) isIt=true;					// ha még nem volt ->  meg van az új szám
+		}
+		ptip1.push(number);					// új szám beszúrása a vector végére
+		
+	}
+	
+	// document.kombinaciok.eredmeny.value = ptip1.join("  ");
+	return ptip1;
+	 
+ }
+ 
+  
+ //******************************************************************************
+// 	számok véletlen kiválasztása  a megadottak közül
+//	
+//	tip -->  hány darab szám kell
+// 	pnumbers -->  a számok, amelyek közül választani lehet 
+//						vector (array)
+//******************************************************************************
+function randfromNumbers(tip,pnumbers)
+ {
+	var i=0;
+	var number=0; 
+	var maxnumb; 
+	var prandNumbers= new Array();				// vector  véletlen számok tárolására
+	var ptip1= new Array();		// vector a kiválasztott számok tárolására
+	
+	maxnumb=pnumbers.length;
+	prandNumbers=randomTip(tip,maxnumb);
+		
+	for(i=0;i<tip;i++)				// a kiválasztott számok beírása a kimeneti vectorba
+	{
+		number= pnumbers[prandNumbers[i]-1];
+		ptip1.push(number);		
+		
+	}	
+
+	return ptip1;
+	 
+ }
+
+
+//******************************************************************************
+// 	szám kombinációkat állít elő a megadott számokból
+//	
+//	tip -->  hány darab szám kell
+// 	pnumbers -->  a számok, amelyek közül választani lehet 
+//						vector<unsigned int>
+//******************************************************************************
+
+function combinationTip(tip,pnumbers)
+ {
+	var ptip1 = new Array();				   // vector  a tipphez
+	// var ptips = new Array();	
+	var maxnumb;
+	var number; 
+	var index = new Array([tip]); 
+	var generate=true;
+	var i=0;
+
+	maxnumb=pnumbers.length;
+	if(maxnumb>=tip)
+	 {
+		 var ptips = new Array();		// vectorok vectora --> az eredmény tippsor
+		 for(i=0;i<tip;i++) index[i]=i;
+		 // alert(" Kombinációk készítése ");
+		 
+		 while(generate)
+		 {
+				var ptip1= new Array();
+				for(i=0;i<tip;i++)	  // egy új kombináció előállítása
+				{
+					number=pnumbers[index[i]];
+					ptip1.push(number);		
+					
+				}	
+				
+				// cout << "*";
+				ptips.push(ptip1);  // egy új kombináció felvétele
+				// delete ptip1;
+				// az indexek átállítása új kombináció felvételéhez
+				if(index[tip-1]<(maxnumb-1))
+					index[tip-1]++;		// az utolsó index léptetése, ha lehet
+				else
+				{	// előző indexek léptetése
+					var lep=tip-1;
+					var keres=true;
+					while(keres)
+					{
+						if(lep>0)
+							{ lep--;  if(index[lep+1]-index[lep]>1) keres=false;   }
+						else   // vége a mókának !
+							{ keres=false, generate=false; }					 
+					}	 
+				 
+					if(generate)
+						{ index[lep]++; for(i=lep+1;i<tip;i++) index[i]=index[i-1]+1;  }	 			 
+				 
+				}	 // else
+			 
+		  }  // while(generate)
+		  
+		 
+		 return  ptips;
+	 }	 
+	 
+	else return  ptips;
+	
+}
+
+
+
+//******************************************************************************
+// 	hibapontos kombinációt állít elő 
+//	a megadott kombinációból ("megszűri" a kombinációt)
+//	
+//	fault -->  hiba szám (mennyi eltérés lehet)
+// 	ptips -->  bemenő  számsorok (tippek), amelyek közül választani kell (szűrni kell)
+//						
+//******************************************************************************
+function filtercombinationTip(fault,ptips)
+ {
+	var pfaulttips = new Array();	// az eredmény (megszűrt) tippsor
+	var filtered = new Array();
+	var diffmin;		// min.  eltérő számok
+	var diff ;			// eltérő számok
+	var i=0;
+	var tipnumber;
+	var key;
+	var number;
+	var tip1;
+	var OK = true;;
+	var thereis = false;
+	
+	pfaulttips = new  Array();
+	tipnumber=ptips.length;
+	// cout << " Kombinációk (tippek) száma:  " << tipnumber << endl;
+	pfaulttips.push(ptips[tipnumber-1]);  // az utolsó kombináció felvétele a szűrtek közé
+	for(tip1 of ptips)		// végignézzük az összes tippet (kombinációt)
+	 {
+		 diffmin=tip1.length;
+		 OK=true;
+		 for(i=0;i<pfaulttips.length && OK;i++)  // összevetjük a már megszűrt tippekkel
+		  {
+			  diff=0;
+			 //  filtered=pfaulttips[i];    !!
+			  for(key of tip1)
+			    {
+					thereis=false;
+					for(number of pfaulttips[i])
+						{ if(key==number) thereis=true; }
+					if(!thereis) { diff++; } 		//   nincs a vektorban -> különbség +1
+				  
+				}
+			  if(diff<diffmin) diffmin=diff;
+			  if(diffmin<=fault) OK=false;  // kicsi az eltérés --> kiszűrjük !!
+		  }
+		 
+		 
+		 if(OK)	pfaulttips.push(tip1);  // a kombináció felvétele a szűrtek közé  
+		 
+	 }	 
+	 
+	tipnumber=pfaulttips.length;
+	// cout << " Hibapontos tippek száma:  " << tipnumber << endl;
+	
+	return pfaulttips;
+
+ }
+ 
+
+ 
+//******************************************************************************
+
+function comb(range,number)
+ { 
+	 // combination
+	 // pl.  6-os lottó:  45 számból 6-ot húznak, kombináció szám -->  45!/((45-6)! * 6!)   -->
+	 //   combi= 45*44*43*42*41*40/(1*2*3*4*5*6)
+	 
+	var combi=1;
+	var i;
+	var x;
+	
+	x=range;
+	for(i=0;i<number;i++)			// kombináció    range!/((range-number)! * number!)
+		{ combi=combi*x; x--;  }
+	for(i=1;i<number+1;i++)
+		{ combi=combi/i;  }		
+
+	return combi;
+ 
+ }
+
+
+//******************************************************************************
+
+function comb2(range,number1,number2)
+ { 
+	 // combination2
+	 // pl.  kenó:  80 számból 20-at húznak, kombináció szám -->  80!/((80-20)! * 20!)   -->
+	 //			combi1= (80*79*78*77*76*75*74*73*72*71*70*69*68*67*66*65*64*63*62*61)/(1*2*3*4*5*6*7*8*9*10*11*12*13*14*15*16*17*18*19*20)
+	 // ebből  10-es játék esetén jó kombinációk (telitalálat)  --> (80-10)!/((80-(20-10))! * (20-10)!)
+	 //			combi2= (70*69*68*67*66*65*64*63*62*61)/(1*2*3*4*5*6*7*8*9*10)
+	 // esély a 10-es telitalálatra -->    1 / (combi1/combi2)
+	var combi1=1;
+	var combi2=1;
+	var i;
+	var x;
+	
+	x=range;
+	for(i=0;i<number1;i++)				// kombináció    range!/((range-number1)! * number1!)
+		{ combi1=combi1*x; x--; }
+	for(i=1;i<number1+1;i++)
+		{ combi1=combi1/i;  }	
+		
+	x=range-number2;
+	for(i=0;i<number1-number2;i++)
+		{ combi2=combi2*x; x--;  }
+	for(i=1;i<number1-number2+1;i++)
+		{ combi2=combi2/i; }			
+
+	return combi1/combi2;
+ 
+ }
+
+
+//******************************************************************************
+
+</SCRIPT>
+</body>
+</html> 

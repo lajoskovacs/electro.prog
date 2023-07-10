@@ -1,0 +1,21 @@
+main
+	__CC2DW
+		____DoICP
+	kezdo_beall
+		send_felbajt
+		send_egybajt
+	send_egybajt
+	____DoICP
+	Mul_16x16_U
+	Div_16x16_S
+		Div_16x16_S_L
+	Div_32x32_S
+		SDIV3232L
+		COMFREM
+	irLCDre
+		Div_16x16_S
+			Div_16x16_S_L
+		Div_8x8_U
+		Mul_8x8_U
+		send_egybajt
+interrupt

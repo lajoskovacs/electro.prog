@@ -1,0 +1,37 @@
+body {
+    padding: 10px;
+    background-image: url(beach.jpg);
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+section{
+    margin: 5px;
+    /* border: solid 10px gray;  */
+    width: fit-content;
+    max-width: 600px;
+    overflow: scroll;
+}
+
+h1 {
+    color: red;
+    background-color: aqua;
+    max-width: 300px;
+    overflow: scroll;
+}
+h2 {
+    color: blue;
+    /* background-color: bisque; */
+}
+p {
+    margin: 5px;
+    /* border: solid 10px gray;  */
+    width: fit-content;
+    max-width: 500px;
+    overflow: scroll;
+}
+
+a {
+    margin: 5px;
+    
+}
